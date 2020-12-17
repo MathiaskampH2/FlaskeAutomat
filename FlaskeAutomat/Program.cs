@@ -49,7 +49,7 @@ namespace FlaskeAutomat
         // makes either a soda bottle or beer bottle and enqueue it into bottlesMade queue
         public static void ProduceBottles()
         {
-            while (Thread.CurrentThread.IsAlive)
+            while (true)
             {
                 lock (bottlesMade)
                 {
@@ -79,81 +79,96 @@ namespace FlaskeAutomat
                     Monitor.PulseAll(bottlesMade);
                 }
 
-                Thread.Sleep(rand.Next(1000));
+                Thread.Sleep(rand.Next(500));
             }
         }
 
         // sorts the bottle of bottlesMade queue and adds it to either bottleSortedSoda or BottleSortedBeer depending on what type of Id the bottle has
         public static void SortProducedBottles()
         {
-            while (Thread.CurrentThread.IsAlive)
+            while (true)
             {
                 lock (bottlesMade)
                 {
                     while (bottlesMade.Count == 0)
                     {
                         Monitor.Wait(bottlesMade);
+                        Console.WriteLine("waiting for bottle");
                     }
 
                     Bottle temp = bottlesMade.Dequeue();
 
                     if (temp.Id.Substring(0, 2) == "10")
                     {
-                        bottlesSortedSoda.Enqueue(temp);
+                        lock (bottlesSortedSoda)
+                        {
+                            bottlesSortedSoda.Enqueue(temp);
+                            Console.WriteLine(
+                                $"id : {temp.Id}  type :{temp.Name} has been added to Soda queue");
 
-                        Console.WriteLine($"id : {temp.Id}  type :{temp.Name} has been added to Soda queue");
+                            Monitor.PulseAll(bottlesSortedSoda);
+                        }
                     }
 
-                    else
+                    else if (temp.Id.Substring(0, 2) == "20")
                     {
-                        bottlesSortedBeer.Enqueue(temp);
-                        Console.WriteLine($"id : {temp.Id}  type :{temp.Name} has been added to Beer queue");
-                    }
+                        lock (bottlesSortedBeer)
+                        {
+                            bottlesSortedBeer.Enqueue(temp);
+                            Console.WriteLine(
+                                $"id : {temp.Id}  type :{temp.Name} has been added to Beer queue");
 
+                            Monitor.PulseAll(bottlesSortedBeer);
+                        }
+                    }
                 }
 
-                Thread.Sleep(1000);
-                
+                Thread.Sleep(rand.Next(1000));
             }
-            
         }
+        
+    
 
         // Dequeue a soda from bottlesSortedSoda 
         public static void ConsumeSoda()
         {
-            while (Thread.CurrentThread.IsAlive)
+            while (true)
             {
-                while (bottlesSortedSoda.Count > 0)
+                lock (bottlesSortedSoda)
                 {
-                    lock (bottlesSortedSoda)
+                    while (bottlesSortedSoda.Count == 0)
                     {
-                        Bottle temp = bottlesSortedSoda.Dequeue();
-
-                        Console.WriteLine($"id : {temp.Id}  type :{temp.Name} has been consumed");
+                        Console.WriteLine("waiting for soda");
+                        Monitor.Wait(bottlesSortedSoda);
                     }
-                }
-            }
+                    Bottle temp = bottlesSortedSoda.Dequeue();
 
-            Thread.Sleep(1000);
+                    Console.WriteLine($"id : {temp.Id}  type :{temp.Name} has been consumed");
+                }
+                Thread.Sleep(rand.Next(1000));
+            }
         }
 
         // Dequeue a beer from bottlesSortedBeer
         public static void ConsumeBeer()
         {
-            while (Thread.CurrentThread.IsAlive)
+            while (true)
             {
-                while (bottlesSortedBeer.Count > 0)
+                lock (bottlesSortedBeer)
                 {
-                    lock (bottlesSortedBeer)
+                    while (bottlesSortedBeer.Count == 0)
                     {
-                        Bottle temp = bottlesSortedBeer.Dequeue();
-
-                        Console.WriteLine($"id : {temp.Id}  type :{temp.Name} has been consumed");
+                        Console.WriteLine("waiting for beer");
+                        Monitor.Wait(bottlesSortedBeer);
                     }
-                }
-            }
 
-            Thread.Sleep(1000);
+                    Bottle temp = bottlesSortedBeer.Dequeue();
+
+                    Console.WriteLine($"id : {temp.Id}  type :{temp.Name} has been consumed");
+                }
+
+                Thread.Sleep(rand.Next(1000));
+            }
         }
 
 
